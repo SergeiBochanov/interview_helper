@@ -1,0 +1,17 @@
+venv/
+.venv/
+env/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+.env
+.env.local
+
+chroma_db/
+**/chroma_db/
+*.sqlite3
+*.sqlite3-journal
