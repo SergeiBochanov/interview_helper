@@ -1,11 +1,11 @@
 import streamlit as st
-from api_client import start_interview, send_interview_message, finish_interview, APIError
+from api_client import start_interview, send_interview_message, finish_interview, get_real_topics, APIError
 from auth import ensure_user
-from mock_api import DIRECTIONS, TOPICS
+from mock_api import DIRECTIONS
 
 st.set_page_config(page_title="Мок-интервью", page_icon=None)
-
 user_id = ensure_user()
+
 st.title("Режим мок-интервью")
 
 if not user_id:
@@ -14,12 +14,18 @@ if not user_id:
 
 # --- старт сессии ---
 if "interview" not in st.session_state:
+    try:
+        available_topics = get_real_topics()
+    except APIError as e:
+        st.error(f"Не удалось загрузить темы с сервера: {e}")
+        available_topics = ["Алгоритмы", "SQL", "Machine Learning"]
+        
     col1, col2 = st.columns(2)
     with col1:
         direction = st.selectbox("Направление", DIRECTIONS)
     with col2:
-        topic = st.selectbox("Тема для старта", TOPICS)
-
+        topic = st.selectbox("Тема для старта", available_topics)
+        
     if st.button("Начать интервью", type="primary"):
         try:
             with st.spinner("Готовим интервьюера..."):
@@ -27,6 +33,7 @@ if "interview" not in st.session_state:
         except APIError as e:
             st.error(str(e))
             st.stop()
+            
         st.session_state["interview"] = {
             "session_id": data["session_id"],
             "direction": direction,
@@ -58,12 +65,8 @@ for msg in st.session_state["chat_history"]:
 # --- ввод ответа пользователя ---
 user_input = st.chat_input("Введи ответ на вопрос интервьюера...")
 if user_input:
-    # показываем реплику пользователя сразу, но в session_state кладём
-    # только после успешного ответа сервера — иначе при сбое сети
-    # реплика "зависает" в истории без ответа интервьюера
     with st.chat_message("user"):
         st.write(user_input)
-
     try:
         with st.spinner("Интервьюер оценивает ответ..."):
             result = send_interview_message(
@@ -74,21 +77,21 @@ if user_input:
         st.error(str(e))
         st.info("Ответ не сохранён из-за ошибки связи — можно ввести его ещё раз.")
         st.stop()
-
+        
     interview["scores"].append(result["score"])
     interview["question_number"] = result["question_number"]
     interview["topic"] = result.get("next_topic", interview["topic"])
-
+    
     # Контур интервью не присылает флаг "изменилась ли сложность" —
     # сравниваем сами старое значение с calculated_next_difficulty
     new_difficulty = result["calculated_next_difficulty"]
     difficulty_changed = new_difficulty != interview["current_difficulty"]
-
+    
     feedback_text = f"**Оценка: {result['score']}/5.** {result['feedback']}"
     if difficulty_changed:
         feedback_text += f"\n\nУровень сложности изменён на **{new_difficulty}**."
     feedback_text += f"\n\n---\n\n{result['next_question']}"
-
+    
     interview["current_difficulty"] = new_difficulty
     st.session_state["chat_history"].append({"role": "user", "content": user_input})
     st.session_state["chat_history"].append({"role": "assistant", "content": feedback_text})
