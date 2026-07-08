@@ -3,6 +3,8 @@ import json
 import uuid
 import chromadb
 from gigachat import GigaChat
+from dotenv import load_dotenv
+load_dotenv()
 
 GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS")
 PROMPT_FILE_PATH = os.path.join("prompts", "question_generation.txt")
@@ -95,7 +97,7 @@ def generate_questions_from_text(article_text: str) -> list[dict]:
                 fixed_content += char
         return json.loads(fixed_content)
 
-def check_and_save_question(question_data: dict, question_threshold: float = 0.32) -> str:
+def check_and_save_question(question_data: dict, question_threshold: float = 0.12) -> str:
     """
     Проверяет вопрос на дубликаты (используя косинусное расстояние), 
     нормализует топик и сохраняет уникальный вопрос в ChromaDB.
