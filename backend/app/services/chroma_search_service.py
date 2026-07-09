@@ -2,17 +2,11 @@ import os
 import chromadb
 
 from app.services.chroma_service import get_embedding
-
+from app.services.chroma_service import questions_collection, topics_collection
 
 CHROMA_DB_PATH = os.path.join(os.getcwd(), "chroma_db")
 
 chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-
-questions_collection = chroma_client.get_or_create_collection(
-    name="interview_questions",
-    metadata={"hnsw:space": "cosine"}
-)
-
 
 def search_top_questions(query: str, n_results: int = 20) -> list[dict]:
     """
@@ -51,3 +45,15 @@ def search_top_questions(query: str, n_results: int = 20) -> list[dict]:
         })
 
     return found
+
+def get_all_saved_topics() -> list[str]:
+    """
+    Возвращает список всех уникальных эталонных топиков, сохраненных в ChromaDB.
+    """
+    try:
+        results = topics_collection.get()
+        if results and "documents" in results and results["documents"]:
+            return sorted(list(set(results["documents"])))
+        return []
+    except Exception:
+        return []

@@ -1,15 +1,19 @@
 import os
 from fastapi import FastAPI
 from dotenv import load_dotenv
+from app.database.database import engine, Base
+import app.database.models as models
 
 load_dotenv()
 
-from app.api.parser_router import router as parser_router
-from app.api import search
+from app.api import parser_router, search, history
 
 app = FastAPI()
-app.include_router(parser_router)
+app.include_router(parser_router.router)
 app.include_router(search.router, prefix="/api", tags=["search"])
+app.include_router(history.router, prefix="/api")
+
+models.Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 def read_root():
