@@ -166,12 +166,3 @@ async def handle_interview_message(payload: InterviewMessageRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/history", response_model=HistoryResponse)
-async def get_interview_history(user_id: str = Query(...)):
-    """
-    Возвращает историю. Пока база данных PostgreSQL для сессий находится в процессе 
-    подключения, отдаем пустой список [], чтобы у фронтенда не было 404 ошибки.
-    """
-    return {"history": []}
