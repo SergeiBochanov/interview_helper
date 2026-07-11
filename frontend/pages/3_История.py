@@ -24,7 +24,9 @@ if not history:
     st.info("Пока нет пройденных сессий. Пройди режим вопросов или интервью.")
     st.stop()
 
-df = pd.DataFrame(history).sort_values("date")
+df = pd.DataFrame(history)
+df["date"] = pd.to_datetime(df["date"])
+df = df.sort_values("date")
 
 # --- динамика оценок по времени ---
 st.subheader("Динамика оценок")
@@ -43,8 +45,10 @@ else:
 
 # --- таблица сессий ---
 st.subheader("Пройденные сессии")
-display_df = df[["date", "direction", "topic", "questions_count", "avg_score"]].rename(columns={
+display_df = df[["date", "direction", "topic", "questions_count", "avg_score"]].sort_values("date", ascending=False).copy()
+display_df["date"] = display_df["date"].dt.strftime("%d.%m.%Y %H:%M")
+display_df = display_df.rename(columns={
     "date": "Дата", "direction": "Направление", "topic": "Тема",
     "questions_count": "Вопросов", "avg_score": "Средняя оценка",
 })
-st.dataframe(display_df.sort_values("Дата", ascending=False), width="stretch", hide_index=True)
+st.dataframe(display_df, width="stretch", hide_index=True)
