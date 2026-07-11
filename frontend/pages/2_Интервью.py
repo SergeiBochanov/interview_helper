@@ -106,11 +106,11 @@ if user_input:
     feedback_text = f"**Оценка: {result['score']}/5.** {result['feedback']}"
     if difficulty_changed:
         feedback_text += f"\n\nУровень сложности изменён на **{new_difficulty}**."
-    feedback_text += f"\n\n---\n\n{result['next_question']}"
-    
+
     interview["current_difficulty"] = new_difficulty
     st.session_state["chat_history"].append({"role": "user", "content": user_input})
     st.session_state["chat_history"].append({"role": "assistant", "content": feedback_text})
+    st.session_state["chat_history"].append({"role": "assistant", "content": result["next_question"]})
     st.rerun()
 
 st.divider()

@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import re
 from dotenv import load_dotenv
 from gigachat import GigaChat
 from pydantic import BaseModel, Field
@@ -8,6 +9,13 @@ from app.services.chroma_service import questions_collection
 from app.services.chroma_search_service import _direction_variants
 
 load_dotenv()
+
+
+def _clean_feedback(text: str) -> str:
+    if not isinstance(text, str):
+        return text
+    return re.sub(r'^[\s"\'`,]+|[\s"\'`,]+$', "", text)
+
 
 class InterviewAssessment(BaseModel):
     score: int = Field(description="Оценка ответа пользователя от 1 до 5, где 5 - идеально.")
@@ -149,7 +157,9 @@ def evaluate_interview_answer(question: str, model_answer: str, user_answer: str
         try:
             function_args = response.choices[0].message.function_call.arguments
             res = json.loads(function_args) if isinstance(function_args, str) else function_args
-            
+
+            if "feedback" in res:
+                res["feedback"] = _clean_feedback(res["feedback"])
             res["saved_question_text"] = question
             res["saved_current_difficulty"] = current_difficulty
             return res
@@ -226,6 +236,8 @@ def evaluate_mentor_question(question: str, model_answer: str, user_answer: str,
         try:
             function_args = response.choices[0].message.function_call.arguments
             res = json.loads(function_args) if isinstance(function_args, str) else function_args
+            if "feedback" in res:
+                res["feedback"] = _clean_feedback(res["feedback"])
             res["saved_question_text"] = question
             res["saved_current_difficulty"] = current_difficulty
             return res
