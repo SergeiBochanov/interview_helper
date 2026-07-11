@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from gigachat import GigaChat
 from pydantic import BaseModel, Field
 from app.services.chroma_service import questions_collection
+from app.services.chroma_search_service import _direction_variants
 
 load_dotenv()
 
@@ -16,10 +17,12 @@ class InterviewAssessment(BaseModel):
 
 def get_question_from_chroma(direction: str, topic: str, difficulty: str) -> dict:
     try:
+        direction_filter = {"direction": {"$in": _direction_variants(direction)}}
+
         results = questions_collection.get(
             where={
                 "$and": [
-                    {"direction": direction},
+                    direction_filter,
                     {"topic": topic},
                     {"difficulty": difficulty}
                 ]
@@ -30,7 +33,7 @@ def get_question_from_chroma(direction: str, topic: str, difficulty: str) -> dic
             results = questions_collection.get(
                 where={
                     "$and": [
-                        {"direction": direction},
+                        direction_filter,
                         {"topic": topic}
                     ]
                 }
@@ -38,7 +41,7 @@ def get_question_from_chroma(direction: str, topic: str, difficulty: str) -> dic
             
         if not results or not results["documents"]:
             results = questions_collection.get(
-                where={"direction": direction}
+                where=direction_filter
             )
 
         if not results or not results["documents"]:

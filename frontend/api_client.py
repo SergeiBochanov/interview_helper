@@ -83,5 +83,6 @@ def get_weak_topics(user_id: str):
     return _request("GET", "/api/stats/weak-topics", params={"user_id": user_id})
 
 
-def get_real_topics():
-    return _request("GET", "/api/topics")
+def get_real_topics(direction: str = None):
+    params = {"direction": direction} if direction else {}
+    return _request("GET", "/api/topics", params=params)

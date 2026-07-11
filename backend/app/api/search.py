@@ -5,7 +5,7 @@ from datetime import datetime
 from app.services.rag_service import retrieve_questions, generate_rag_answer
 from app.services.interviewer import evaluate_interview_answer, get_question_from_chroma, evaluate_mentor_question, generate_welcome_message
 from app.services.chroma_service import questions_collection
-from app.services.chroma_search_service import questions_collection, get_all_saved_topics
+from app.services.chroma_search_service import questions_collection, get_all_saved_topics, get_topics_for_direction
 
 from app.schemas.search_schemas import (
     SearchRequest, 
@@ -56,8 +56,8 @@ async def rag_answer_endpoint(payload: RagAnswerRequest):
     
 
 @router.get("/topics")
-def read_topics():
-    topics = get_all_saved_topics()
+def read_topics(direction: str = Query(None)):
+    topics = get_topics_for_direction(direction) if direction else get_all_saved_topics()
     if not topics:
         return ["Алгоритмы", "SQL", "Системный дизайн", "Machine Learning", "Поведенческие"]
     return topics

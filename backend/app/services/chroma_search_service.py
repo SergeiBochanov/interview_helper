@@ -57,3 +57,40 @@ def get_all_saved_topics() -> list[str]:
         return []
     except Exception:
         return []
+
+
+DIRECTION_ALIASES = {
+    "Data Analysis": "Data Analyst",
+}
+
+
+def _direction_variants(direction: str) -> list[str]:
+    variants = {direction}
+    for raw, canonical in DIRECTION_ALIASES.items():
+        if canonical == direction:
+            variants.add(raw)
+        if raw == direction:
+            variants.add(canonical)
+    return list(variants)
+
+
+def get_topics_for_direction(direction: str) -> list[str]:
+    if not direction:
+        return []
+    try:
+        variants = _direction_variants(direction)
+        where_clause = (
+            {"direction": variants[0]}
+            if len(variants) == 1
+            else {"direction": {"$in": variants}}
+        )
+        results = questions_collection.get(
+            where=where_clause,
+            include=["metadatas"],
+        )
+        if not results or not results.get("metadatas"):
+            return []
+        topics = {m.get("topic") for m in results["metadatas"] if m.get("topic")}
+        return sorted(topics)
+    except Exception:
+        return []

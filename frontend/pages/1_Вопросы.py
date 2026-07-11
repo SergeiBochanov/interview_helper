@@ -12,22 +12,31 @@ if not user_id:
     st.warning("Введи своё имя в меню слева, чтобы продолжить.")
     st.stop()
 
-try:
-    available_topics = get_real_topics()
-except APIError as e:
-    st.error(f"Не удалось загрузить темы с сервера: {e}")
-    available_topics = ["Алгоритмы", "SQL", "Machine Learning"]
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_topics_for_direction(direction: str):
+    return get_real_topics(direction)
+
 
 # --- выбор направления/темы/уровня и получение вопроса ---
 col1, col2, col3 = st.columns(3)
 with col1:
     direction = st.selectbox("Направление", DIRECTIONS, key="q_direction")
+
+try:
+    available_topics = _load_topics_for_direction(direction)
+    if not available_topics:
+        st.info(f"Для направления «{direction}» в базе пока нет вопросов ни по одной теме.")
+        available_topics = ["Тем пока нет"]
+except APIError as e:
+    st.error(f"Не удалось загрузить темы с сервера: {e}")
+    available_topics = ["Алгоритмы", "SQL", "Machine Learning"]
+
 with col2:
-    topic = st.selectbox("Тема", available_topics, key="q_topic")
+    topic = st.selectbox("Тема", available_topics, key=f"q_topic_{direction}")
 with col3:
     difficulty = st.selectbox("Уровень", DIFFICULTIES, index=1, key="q_difficulty")
 
-if st.button("Получить вопрос", type="primary"):
+if st.button("Получить вопрос", type="primary", disabled=(topic == "Тем пока нет")):
     try:
         with st.spinner("Подбираем вопрос..."):
             st.session_state["current_question"] = get_question(direction, topic, difficulty)
