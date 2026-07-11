@@ -15,7 +15,29 @@ class InterviewAssessment(BaseModel):
     calculated_next_difficulty: str = Field(description="Итоговая сложность для следующего вопроса: 'Junior', 'Middle' или 'Senior'.")
 
 
-def get_question_from_chroma(direction: str, topic: str, difficulty: str) -> dict:
+def get_question_by_id(question_id: str) -> dict | None:
+    """Достаёт конкретный вопрос по ID."""
+    try:
+        results = questions_collection.get(ids=[question_id])
+        if not results or not results["documents"]:
+            return None
+        return {
+            "id": question_id,
+            "text": results["documents"][0],
+            "answer": results["metadatas"][0].get("answer", ""),
+            "difficulty": results["metadatas"][0].get("difficulty", ""),
+        }
+    except Exception:
+        return None
+
+
+def get_question_from_chroma(
+    direction: str,
+    topic: str,
+    difficulty: str,
+    exclude_ids: list[str] | None = None,
+) -> dict:
+    exclude_ids = set(exclude_ids or [])
     try:
         direction_filter = {"direction": {"$in": _direction_variants(direction)}}
 
@@ -52,8 +74,13 @@ def get_question_from_chroma(direction: str, topic: str, difficulty: str) -> dic
                 "difficulty": difficulty
             }
 
-        total_questions = len(results["documents"])
-        random_idx = random.randint(0, total_questions - 1)
+        candidate_indices = [
+            i for i, qid in enumerate(results["ids"]) if qid not in exclude_ids
+        ]
+        if not candidate_indices:
+            candidate_indices = list(range(len(results["ids"])))
+
+        random_idx = random.choice(candidate_indices)
 
         return {
             "id": results["ids"][random_idx],

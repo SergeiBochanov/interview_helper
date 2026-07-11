@@ -26,10 +26,15 @@ def _request(method: str, path: str, **kwargs):
         raise APIError("Сервер вернул некорректный ответ (не JSON).")
 
 
-def get_question(direction: str, topic: str, difficulty: str = "Middle"):
+def get_question(direction: str, topic: str, difficulty: str = "Middle", exclude_ids=None):
     if USE_MOCK:
         return mock_api.get_question(direction, topic, difficulty)
-    return _request("GET", "/api/question", params={"direction": direction, "topic": topic, "difficulty": difficulty})
+    return _request("GET", "/api/question", params={
+        "direction": direction,
+        "topic": topic,
+        "difficulty": difficulty,
+        "exclude_ids": ",".join(exclude_ids) if exclude_ids else "",
+    })
 
 
 def submit_answer(user_id: str, question_id: str, topic: str, answer_text: str):
@@ -46,7 +51,10 @@ def start_interview(direction: str, topic: str):
     return _request("POST", "/api/interview/start", json={"direction": direction, "topic": topic})
 
 
-def send_interview_message(user_id, session_id, direction, topic, user_message, question_number, current_difficulty):
+def send_interview_message(
+    user_id, session_id, direction, topic, user_message, question_number, current_difficulty,
+    current_question_id=None, asked_question_ids=None,
+):
     if USE_MOCK:
         return mock_api.send_interview_message(
             user_id, session_id, direction, topic, user_message, question_number, current_difficulty
@@ -59,6 +67,8 @@ def send_interview_message(user_id, session_id, direction, topic, user_message, 
         "message": user_message,
         "question_number": question_number,
         "current_difficulty": current_difficulty,
+        "current_question_id": current_question_id,
+        "asked_question_ids": asked_question_ids or [],
     })
 
 

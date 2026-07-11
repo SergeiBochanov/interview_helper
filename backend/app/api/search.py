@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 
 from app.services.rag_service import retrieve_questions, generate_rag_answer
-from app.services.interviewer import evaluate_interview_answer, get_question_from_chroma, evaluate_mentor_question, generate_welcome_message
+from app.services.interviewer import evaluate_interview_answer, get_question_from_chroma, get_question_by_id, evaluate_mentor_question, generate_welcome_message
 from app.services.chroma_service import questions_collection
 from app.services.chroma_search_service import questions_collection, get_all_saved_topics, get_topics_for_direction
 
@@ -67,10 +67,14 @@ def read_topics(direction: str = Query(None)):
 async def get_single_question(
     direction: str = Query(...),
     topic: str = Query(...),
-    difficulty: str = Query("Middle")
+    difficulty: str = Query("Middle"),
+    exclude_ids: str = Query("", description="ID уже показанных вопросов через запятую")
 ):
     try:
-        question_data = get_question_from_chroma(direction=direction, topic=topic, difficulty=difficulty)
+        ids_to_exclude = [i for i in exclude_ids.split(",") if i]
+        question_data = get_question_from_chroma(
+            direction=direction, topic=topic, difficulty=difficulty, exclude_ids=ids_to_exclude
+        )
         return {
             "question_id": question_data["id"],
             "direction": direction,
@@ -125,7 +129,8 @@ async def start_interview_session(payload: InterviewStartRequest):
             "topic": payload.topic,
             "message": welcome_msg,
             "current_difficulty": "Middle",
-            "question_number": 1
+            "question_number": 1,
+            "question_id": first_q["id"],
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -134,11 +139,15 @@ async def start_interview_session(payload: InterviewStartRequest):
 @router.post("/interview/message")
 async def handle_interview_message(payload: InterviewMessageRequest):
     try:
-        current_q = get_question_from_chroma(
-            direction=payload.direction, 
-            topic=payload.topic, 
-            difficulty=payload.current_difficulty
-        )
+        current_q = None
+        if payload.current_question_id:
+            current_q = get_question_by_id(payload.current_question_id)
+        if current_q is None:
+            current_q = get_question_from_chroma(
+                direction=payload.direction,
+                topic=payload.topic,
+                difficulty=payload.current_difficulty,
+            )
 
         assessment = evaluate_interview_answer(
             question=current_q["text"],
@@ -148,11 +157,15 @@ async def handle_interview_message(payload: InterviewMessageRequest):
         )
         
         next_difficulty = assessment.get("calculated_next_difficulty", payload.current_difficulty)
+
+        already_asked = set(payload.asked_question_ids)
+        already_asked.add(current_q["id"])
         
         next_q = get_question_from_chroma(
             direction=payload.direction, 
             topic=payload.topic, 
-            difficulty=next_difficulty
+            difficulty=next_difficulty,
+            exclude_ids=list(already_asked),
         )
         
         return {
@@ -160,6 +173,7 @@ async def handle_interview_message(payload: InterviewMessageRequest):
             "score": assessment["score"],
             "feedback": assessment["feedback"],
             "next_question": next_q["text"],
+            "next_question_id": next_q["id"],
             "next_topic": payload.topic,
             "calculated_next_difficulty": next_difficulty,
             "question_number": payload.question_number + 1

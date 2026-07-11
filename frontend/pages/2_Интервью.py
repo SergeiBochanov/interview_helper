@@ -50,6 +50,8 @@ if "interview" not in st.session_state:
             "current_difficulty": data["current_difficulty"],
             "question_number": data["question_number"],
             "scores": [],
+            "current_question_id": data.get("question_id"),
+            "asked_question_ids": [data.get("question_id")] if data.get("question_id") else [],
         }
         st.session_state["chat_history"] = [
             {"role": "assistant", "content": data["message"]}
@@ -81,6 +83,8 @@ if user_input:
             result = send_interview_message(
                 user_id, interview["session_id"], interview["direction"], interview["topic"],
                 user_input, interview["question_number"], interview["current_difficulty"],
+                current_question_id=interview.get("current_question_id"),
+                asked_question_ids=interview.get("asked_question_ids", []),
             )
     except APIError as e:
         st.error(str(e))
@@ -90,9 +94,12 @@ if user_input:
     interview["scores"].append(result["score"])
     interview["question_number"] = result["question_number"]
     interview["topic"] = result.get("next_topic", interview["topic"])
-    
-    # Контур интервью не присылает флаг "изменилась ли сложность" —
-    # сравниваем сами старое значение с calculated_next_difficulty
+
+    next_question_id = result.get("next_question_id")
+    interview["current_question_id"] = next_question_id
+    if next_question_id:
+        interview.setdefault("asked_question_ids", []).append(next_question_id)
+
     new_difficulty = result["calculated_next_difficulty"]
     difficulty_changed = new_difficulty != interview["current_difficulty"]
     

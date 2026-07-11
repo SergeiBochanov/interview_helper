@@ -37,9 +37,15 @@ with col3:
     difficulty = st.selectbox("Уровень", DIFFICULTIES, index=1, key="q_difficulty")
 
 if st.button("Получить вопрос", type="primary", disabled=(topic == "Тем пока нет")):
+    combo_key = f"{direction}|{topic}|{difficulty}"
+    asked_by_combo = st.session_state.setdefault("q_asked_ids", {})
+    already_asked = asked_by_combo.get(combo_key, [])
+
     try:
         with st.spinner("Подбираем вопрос..."):
-            st.session_state["current_question"] = get_question(direction, topic, difficulty)
+            question = get_question(direction, topic, difficulty, exclude_ids=already_asked)
+        st.session_state["current_question"] = question
+        asked_by_combo.setdefault(combo_key, []).append(question["question_id"])
         st.session_state.pop("last_result", None)
     except APIError as e:
         st.error(str(e))

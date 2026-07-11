@@ -30,6 +30,8 @@ class InterviewMessageRequest(BaseModel):
     message: str
     question_number: int
     current_difficulty: str
+    current_question_id: Optional[str] = None
+    asked_question_ids: List[str] = Field(default_factory=list)
 
 class HistoryItem(BaseModel):
     session_id: str
