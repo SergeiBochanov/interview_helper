@@ -1,5 +1,4 @@
 from app.services.chroma_search_service import search_top_questions
-from app.services.reranker_service import rerank_candidates
 from app.services.gigachat_answer_service import build_context, ask_gigachat_with_context
 
 
@@ -16,6 +15,8 @@ def retrieve_questions(
 
     if not use_reranker:
         return candidates[:top_k]
+
+    from app.services.reranker_service import rerank_candidates
 
     return rerank_candidates(
         query=query,

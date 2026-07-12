@@ -8,6 +8,18 @@ from app.services.chroma_service import questions_collection
 
 load_dotenv()
 
+DEFAULT_QUESTION_ID = "default_id"
+DEFAULT_MODEL_ANSWER = "Ожидается технически грамотный ответ."
+
+
+def build_fallback_question(direction: str, topic: str, difficulty: str) -> dict:
+    return {
+        "id": DEFAULT_QUESTION_ID,
+        "text": f"Расскажите базовые концепции по теме {topic} в направлении {direction}.",
+        "answer": DEFAULT_MODEL_ANSWER,
+        "difficulty": difficulty
+    }
+
 class InterviewAssessment(BaseModel):
     score: int = Field(description="Оценка ответа пользователя от 1 до 5, где 5 - идеально.")
     feedback: str = Field(description="Развернутый разбор ответа на русском языке. Что отвечено правильно, а что упущено.")
@@ -42,12 +54,7 @@ def get_question_from_chroma(direction: str, topic: str, difficulty: str) -> dic
             )
 
         if not results or not results["documents"]:
-            return {
-                "id": "default_id",
-                "text": f"Расскажите базовые концепции по теме {topic} в направлении {direction}.",
-                "answer": "Ожидается технически грамотный ответ.",
-                "difficulty": difficulty
-            }
+            return build_fallback_question(direction, topic, difficulty)
 
         total_questions = len(results["documents"])
         random_idx = random.randint(0, total_questions - 1)

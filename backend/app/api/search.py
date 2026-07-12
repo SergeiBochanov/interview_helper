@@ -3,7 +3,13 @@ import uuid
 from datetime import datetime
 
 from app.services.rag_service import retrieve_questions, generate_rag_answer
-from app.services.interviewer import evaluate_interview_answer, get_question_from_chroma, evaluate_mentor_question, generate_welcome_message
+from app.services.interviewer import (
+    DEFAULT_QUESTION_ID,
+    evaluate_interview_answer,
+    get_question_from_chroma,
+    evaluate_mentor_question,
+    generate_welcome_message,
+)
 from app.services.chroma_service import questions_collection
 from app.services.chroma_search_service import questions_collection, get_all_saved_topics
 
@@ -85,6 +91,13 @@ async def get_single_question(
 @router.post("/answer")
 async def submit_single_answer(payload: AnswerSubmitRequest):
     try:
+        if payload.question_id == DEFAULT_QUESTION_ID:
+            return {
+                "question_id": payload.question_id,
+                "score": 0,
+                "feedback": "В базе пока нет эталонного вопроса и ответа для этой темы, поэтому автоматическая проверка недоступна. Добавьте вопросы в базу и попробуйте снова."
+            }
+
         res = questions_collection.get(ids=[payload.question_id])
         if not res["documents"]:
             raise HTTPException(status_code=404, detail="Вопрос не найден в ChromaDB")
@@ -104,6 +117,8 @@ async def submit_single_answer(payload: AnswerSubmitRequest):
             "score": assessment["score"],
             "feedback": assessment["feedback"]
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
