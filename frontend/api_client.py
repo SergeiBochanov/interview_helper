@@ -11,6 +11,22 @@ class APIError(Exception):
     pass
 
 
+def _format_error_detail(detail):
+    if isinstance(detail, dict):
+        message = detail.get("message")
+        suggestions = detail.get("suggestions") or []
+        parts = [message] if message else []
+        parts.extend(suggestions)
+        if parts:
+            return "\n".join(parts)
+        return str(detail)
+    if isinstance(detail, list):
+        return "\n".join(str(item) for item in detail)
+    if detail:
+        return str(detail)
+    return None
+
+
 def _request(method: str, path: str, **kwargs):
     try:
         resp = requests.request(method, f"{BASE_URL}{path}", timeout=REQUEST_TIMEOUT, **kwargs)
@@ -21,6 +37,14 @@ def _request(method: str, path: str, **kwargs):
     except requests.exceptions.ConnectionError:
         raise APIError("Не удаётся подключиться к серверу. Проверь, что бэкенд запущен.")
     except requests.exceptions.HTTPError as e:
+        try:
+            error_body = e.response.json()
+            detail = _format_error_detail(error_body.get("detail"))
+        except ValueError:
+            detail = None
+
+        if detail:
+            raise APIError(detail)
         raise APIError(f"Сервер вернул ошибку: {e.response.status_code}.")
     except ValueError:
         raise APIError("Сервер вернул некорректный ответ (не JSON).")
@@ -30,6 +54,27 @@ def get_question(direction: str, topic: str, difficulty: str = "Middle"):
     if USE_MOCK:
         return mock_api.get_question(direction, topic, difficulty)
     return _request("GET", "/api/question", params={"direction": direction, "topic": topic, "difficulty": difficulty})
+
+
+def get_question_options():
+    if USE_MOCK:
+        topics_by_direction = {
+            direction: mock_api.TOPICS
+            for direction in mock_api.DIRECTIONS
+        }
+        difficulties_by_direction_topic = {
+            direction: {
+                topic: mock_api.DIFFICULTIES
+                for topic in mock_api.TOPICS
+            }
+            for direction in mock_api.DIRECTIONS
+        }
+        return {
+            "directions": mock_api.DIRECTIONS,
+            "topics_by_direction": topics_by_direction,
+            "difficulties_by_direction_topic": difficulties_by_direction_topic,
+        }
+    return _request("GET", "/api/question/options")
 
 
 def submit_answer(user_id: str, question_id: str, topic: str, answer_text: str):

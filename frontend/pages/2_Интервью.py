@@ -1,5 +1,5 @@
 import streamlit as st
-from api_client import start_interview, send_interview_message, finish_interview, get_real_topics, APIError
+from api_client import start_interview, send_interview_message, finish_interview, get_question_options, APIError
 from auth import ensure_user
 from mock_api import DIRECTIONS
 
@@ -15,18 +15,55 @@ if not user_id:
 # --- старт сессии ---
 if "interview" not in st.session_state:
     try:
-        available_topics = get_real_topics()
+        question_options = get_question_options()
     except APIError as e:
-        st.error(f"Не удалось загрузить темы с сервера: {e}")
-        available_topics = ["Алгоритмы", "SQL", "Machine Learning"]
+        st.error(f"Не удалось загрузить список вопросов с сервера: {e}")
+        question_options = {
+            "directions": DIRECTIONS,
+            "topics_by_direction": {},
+        }
+
+    directions = question_options.get("directions") or []
+    topics_by_direction = question_options.get("topics_by_direction") or {}
+
+    if st.session_state.get("interview_direction") not in directions:
+        st.session_state.pop("interview_direction", None)
+        st.session_state.pop("interview_topic", None)
+
+    selected_direction = st.session_state.get("interview_direction")
+    available_topics = topics_by_direction.get(selected_direction, []) if selected_direction else []
+
+    if st.session_state.get("interview_topic") not in available_topics:
+        st.session_state.pop("interview_topic", None)
         
     col1, col2 = st.columns(2)
     with col1:
-        direction = st.selectbox("Направление", DIRECTIONS)
+        direction = st.selectbox(
+            "Направление",
+            directions,
+            index=None,
+            placeholder="Выберите направление",
+            key="interview_direction",
+        )
     with col2:
-        topic = st.selectbox("Тема для старта", available_topics)
-        
-    if st.button("Начать интервью", type="primary"):
+        topic = st.selectbox(
+            "Тема для старта",
+            available_topics,
+            index=None,
+            placeholder=(
+                "Выберите тему"
+                if available_topics
+                else "Сначала выберите направление"
+                if not direction
+                else "Нет тем для направления"
+            ),
+            key="interview_topic",
+            disabled=not direction or not available_topics,
+        )
+
+    can_start_interview = bool(direction and topic)
+
+    if st.button("Начать интервью", type="primary", disabled=not can_start_interview):
         try:
             with st.spinner("Готовим интервьюера..."):
                 data = start_interview(direction, topic)
