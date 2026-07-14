@@ -149,6 +149,6 @@ if st.button("Завершить интервью и сохранить резу
         st.success("Интервью сохранено в истории.")
         del st.session_state["interview"]
         del st.session_state["chat_history"]
-        st.switch_page("pages/3_История.py")
+        st.switch_page("pages/3_History.py")
     except APIError as e:
         st.error(str(e))

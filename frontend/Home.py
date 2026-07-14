@@ -21,16 +21,16 @@ with col1:
     st.subheader("Режим вопросов")
     st.write("Получи вопрос по теме и разбор своего ответа.")
     if st.button("Перейти к вопросам", width="stretch"):
-        st.switch_page("pages/1_Вопросы.py")
+        st.switch_page("pages/1_Questions.py")
 
 with col2:
     st.subheader("Мок-интервью")
     st.write("Пройди диалог с интервьюером с адаптивной сложностью.")
     if st.button("Начать интервью", width="stretch"):
-        st.switch_page("pages/2_Интервью.py")
+        st.switch_page("pages/2_Interview.py")
 
 st.divider()
 st.subheader("История и статистика")
 st.write("Посмотри динамику своих оценок и слабые темы.")
 if st.button("Открыть историю"):
-    st.switch_page("pages/3_История.py")
+    st.switch_page("pages/3_History.py")
