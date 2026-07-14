@@ -18,14 +18,16 @@ st.write(
 
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("Режим вопросов")
-    st.write("Получи вопрос по теме и разбор своего ответа.")
+    with st.container(height=110, border=False):
+        st.subheader("Режим вопросов")
+        st.write("Получи вопрос по теме и разбор своего ответа.")
     if st.button("Перейти к вопросам", width="stretch"):
         st.switch_page("pages/1_Questions.py")
 
 with col2:
-    st.subheader("Интервью")
-    st.write("Пройди диалог с интервьюером с адаптивной сложностью.")
+    with st.container(height=110, border=False):
+        st.subheader("Интервью")
+        st.write("Пройди диалог с интервьюером с адаптивной сложностью.")
     if st.button("Начать интервью", width="stretch"):
         st.switch_page("pages/2_Interview.py")
 
