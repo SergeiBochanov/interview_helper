@@ -3,10 +3,10 @@ from api_client import start_interview, send_interview_message, finish_interview
 from auth import ensure_user
 from mock_api import DIRECTIONS
 
-st.set_page_config(page_title="Мок-интервью", page_icon=None)
+st.set_page_config(page_title="Интервью", page_icon=None)
 user_id = ensure_user()
 
-st.title("Режим мок-интервью")
+st.title("Режим интервью")
 
 if not user_id:
     st.warning("Введи своё имя в меню слева, чтобы продолжить.")

@@ -24,7 +24,7 @@ with col1:
         st.switch_page("pages/1_Questions.py")
 
 with col2:
-    st.subheader("Мок-интервью")
+    st.subheader("Интервью")
     st.write("Пройди диалог с интервьюером с адаптивной сложностью.")
     if st.button("Начать интервью", width="stretch"):
         st.switch_page("pages/2_Interview.py")
